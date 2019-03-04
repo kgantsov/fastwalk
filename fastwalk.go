@@ -7,9 +7,19 @@
 package fastwalk
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 )
+
+// TraverseLink is used as a return value from WalkFuncs to indicate that the
+// symlink named in the call may be traversed.
+var TraverseLink = errors.New("fastwalk: traverse symlink, assuming target is a directory")
+
+// SkipFiles is a used as a return value from WalkFuncs to indicate that the
+// callback should not be called for any other files in the current directory.
+// Child directories will still be traversed.
+var SkipFiles = errors.New("fastwalk: skip remaining files in directory")
 
 type WalkFunc func(path string, fileType os.FileMode) error
 
@@ -19,6 +29,7 @@ func walk(path string, fileType os.FileMode, walkFn WalkFunc) error {
 	}
 
 	files, err := ReadDir(path)
+
 	if err != nil {
 		return err
 	}
@@ -35,10 +46,12 @@ func walk(path string, fileType os.FileMode, walkFn WalkFunc) error {
 	for _, file := range files {
 		filename := filepath.Join(path, file.Name)
 
-		err = walk(filename, file.Type, walkFn)
-		if err != nil {
-			if file.Type != os.ModeDir {
-				return err
+		if file.Type == os.ModeDir {
+			err = walk(filename, file.Type, walkFn)
+			if err != nil {
+				if file.Type != os.ModeDir {
+					return err
+				}
 			}
 		}
 
