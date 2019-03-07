@@ -46,6 +46,10 @@ func walk(path string, fileType os.FileMode, walkFn WalkFunc) error {
 	for _, file := range files {
 		filename := filepath.Join(path, file.Name)
 
+		if err := walkFn(filename, file.Type); err != nil {
+			return err
+		}
+
 		if file.Type == os.ModeDir {
 			err = walk(filename, file.Type, walkFn)
 			if err != nil {
@@ -54,11 +58,6 @@ func walk(path string, fileType os.FileMode, walkFn WalkFunc) error {
 				}
 			}
 		}
-
-		if err := walkFn(filename, file.Type); err != nil {
-			return err
-		}
-
 	}
 	return nil
 }
