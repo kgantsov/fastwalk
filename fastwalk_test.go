@@ -138,6 +138,29 @@ func TestFastWalk_Symlink(t *testing.T) {
 		})
 }
 
+func TestFastWalk_SkipDir(t *testing.T) {
+	testFastWalk(t, map[string]string{
+		"foo/foo.go":   "one",
+		"bar/bar.go":   "two",
+		"skip/skip.go": "skip",
+	},
+		func(path string, typ os.FileMode) error {
+			if typ == os.ModeDir && strings.HasSuffix(path, "skip") {
+				return filepath.SkipDir
+			}
+			return nil
+		},
+		map[string]os.FileMode{
+			"":                os.ModeDir,
+			"/src":            os.ModeDir,
+			"/src/bar":        os.ModeDir,
+			"/src/bar/bar.go": 0,
+			"/src/foo":        os.ModeDir,
+			"/src/foo/foo.go": 0,
+			"/src/skip":       os.ModeDir,
+		})
+}
+
 var benchDir = flag.String("benchdir", runtime.GOROOT(), "The directory to scan for BenchmarkFastWalk")
 
 func BenchmarkFastWalk(b *testing.B) {
