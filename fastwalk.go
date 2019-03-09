@@ -56,6 +56,9 @@ func walk(path string, fileType os.FileMode, walkFn WalkFunc) error {
 				if file.Type != os.ModeDir {
 					return err
 				}
+				if err == SkipFiles {
+					return err
+				}
 			}
 		}
 	}
