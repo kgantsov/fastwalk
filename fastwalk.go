@@ -29,9 +29,10 @@ func walk(path string, fileType os.FileMode, walkFn WalkFunc) error {
 	}
 
 	files, err := ReadDir(path)
+	err1 := walkFn(path, fileType)
 
-	if err != nil {
-		return err
+	if err != nil || err1 != nil {
+		return err1
 	}
 	// err1 := walkFn(path, info, err)
 	// If err != nil, walk can't walk into this directory.
@@ -46,19 +47,16 @@ func walk(path string, fileType os.FileMode, walkFn WalkFunc) error {
 	for _, file := range files {
 		filename := filepath.Join(path, file.Name)
 
-		if err := walkFn(filename, file.Type); err != nil {
-			return err
-		}
-
 		if file.Type == os.ModeDir {
 			err = walk(filename, file.Type, walkFn)
 			if err != nil {
-				if file.Type != os.ModeDir {
+				if file.Type != os.ModeDir || err != filepath.SkipDir {
 					return err
 				}
-				if err == SkipFiles {
-					return err
-				}
+			}
+		} else {
+			if err := walkFn(filename, file.Type); err != nil && err != filepath.SkipDir {
+				return err
 			}
 		}
 	}
@@ -77,7 +75,6 @@ func Walk(root string, walkFn WalkFunc) error {
 	if err != nil {
 		err = walkFn(root, fileType)
 	} else {
-		err = walkFn(root, fileType)
 		err = walk(root, fileType, walkFn)
 	}
 	if err == filepath.SkipDir {

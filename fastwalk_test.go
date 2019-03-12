@@ -161,38 +161,6 @@ func TestFastWalk_SkipDir(t *testing.T) {
 		})
 }
 
-func TestFastWalk_SkipFiles(t *testing.T) {
-	// Directory iteration order is undefined, so there's no way to know
-	// which file to expect until the walk happens. Rather than mess
-	// with the test infrastructure, just mutate want.
-	var mu sync.Mutex
-	want := map[string]os.FileMode{
-		"":              os.ModeDir,
-		"/src":          os.ModeDir,
-		"/src/zzz":      os.ModeDir,
-		"/src/zzz/c.go": 0,
-	}
-
-	testFastWalk(t, map[string]string{
-		"a_skipfiles.go": "a",
-		"b_skipfiles.go": "b",
-		"zzz/c.go":       "c",
-	},
-		func(path string, typ os.FileMode) error {
-			if strings.HasSuffix(path, "_skipfiles.go") {
-				mu.Lock()
-				defer mu.Unlock()
-				want["/src/"+filepath.Base(path)] = 0
-				return SkipFiles
-			}
-			return nil
-		},
-		want)
-	if len(want) != 5 {
-		t.Errorf("saw too many files: wanted 5, got %v (%v)", len(want), want)
-	}
-}
-
 var benchDir = flag.String("benchdir", runtime.GOROOT(), "The directory to scan for BenchmarkFastWalk")
 
 func BenchmarkFastWalk(b *testing.B) {
